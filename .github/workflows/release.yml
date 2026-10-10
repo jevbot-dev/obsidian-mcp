@@ -64,6 +64,7 @@ jobs:
           sha=$(cut -d' ' -f1 "$zip.sha256")
           {
             echo "Obsidian app bridge: list/select vaults, search and read notes, create and append with readback verification."
+            echo "Includes read-only Jevbot A2UI views for vault lists, search results and verified note edits."
             echo
             echo "Requires Obsidian 1.12.7+ with the official CLI enabled. Uninstalling the bridge preserves Obsidian and all notes."
             echo "Built from $GITHUB_SHA; verify with gh attestation verify $zip -R $GITHUB_REPOSITORY."

@@ -37,6 +37,12 @@ The product remains `obsidian` (`md.obsidian`); its macOS target uses `install.k
 
 Official interfaces: https://obsidian.md/help/cli and https://obsidian.md/help/uri.
 
+## Chat presentation
+
+For clients advertising Jevbot's read-only A2UI v0.9.1 catalogue, `list_vaults`, `search_notes`, `create_note` and `append_note` also return host-rendered views. Vaults show names, paths and a count; search shows returned paths and available snippets; writes show the target, readback verification status and a bounded body preview. Empty results and failed verification have explicit messages. Lists show at most 50 items and previews are truncated only in UI; the ordinary structured/text result is preserved. Unknown search JSON shapes fall back to the ordinary result.
+
+Templates are served through `resources/read`; tool results carry UI-only data updates with `audience: user`. Layouts contain no HTML, scripts, buttons or actions. Note strings remain literal untrusted text. Clients without the advertised catalogue receive the ordinary result without an A2UI surface. Vault selection and opening notes still happen through chat/tool calls.
+
 ## Release checklist
 
 1. Run `npm test` and the Jevbot opt-in bridge integration test against the locally packaged archive.
