@@ -2,6 +2,7 @@
   "name": "obsidian-mcp",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Obsidian app bridge: explicit vault selection, note queries and verified edits through the official CLI.",
   "type": "module",
   "engines": {
