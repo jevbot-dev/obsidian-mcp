@@ -65,3 +65,20 @@ This package contains a JavaScript module, not a macOS executable or app bundle;
 `show_trigonometry` provides an offline MCP App with a unit circle, sine/cosine curves, playback, angle, amplitude, frequency and phase controls. Jevbot embeds the packaged HTML in its existing sandbox; no Obsidian plugin, network request or note modification is needed. This is a self-contained demonstration, not a renderer for arbitrary vault HTML or note formulas. It does not claim to read or explain a specific note. The bridge must be registered with `show_trigonometry: read`.
 
 `read_note` also automatically presents a source-linked integral-area Web view when the actual note contains the supported integral example (the integral of x over [0,1], plus y=x²). Its left-endpoint rectangles converge to 1/2 and 1/3, with playback, function selection and a subdivision slider. Other notes retain their ordinary text results. The bounded excerpt renders Markdown and inline/display LaTeX using Markdown-it (raw HTML disabled) and KaTeX MathML (trust disabled, finite expansion/size limits). Links/images remain inert; no vault scripts execute. The source button asks Jevbot to open a saved Obsidian deep link matching the returned vault and note path, without an MCP call or model turn. Successful opens show no status message; failures remain visible. This requires the matching Jevbot host update (planned 0.2.4).
+
+`read_note` also chooses a tangent Web view automatically for supported notes. Example mode recognizes the Q4 symmetry-center problem `y = A tan(x − π/3)`, its answer C and five ordered `Step 1`…`Step 5` headings; it uses the note's amplitude, phase and original headings. Playback continuously stretches then shifts the curve, shows both zero-point and asymptote-axis symmetry centers, and highlights the minimum positive center in the k=−2…2 table. Clicking a step starts playback there. Changing parameters switches to exploration mode and hides the problem's answer. Concept notes with a tangent “主要性质” section receive generic mode (A=1, ω=1, φ=0), without example steps. Unsupported problems do not receive a fabricated animation/answer.
+
+For deterministic capture, `window.capture.seek(ms)` renders the same frame at the same absolute time; the five steps start at 0, 1800, 4200, 6600 and 9000 ms, and finish at 10800 ms. `capture.configure({width:960,pixelRatio:2})` sets preview dimensions. Curves break at asymptotes and remain clipped to the plot.
+
+Generate a standalone offline preview from a saved `read_note` structuredContent JSON (or its `math` object):
+
+```sh
+node scripts/preview-tangent.mjs result.json tangent-preview.html 960 2
+```
+
+The preview uses the same packaged renderer and clock; its source-open button requires Jevbot's host and stays disabled offline. This is a supported scene based on recognized note content, not arbitrary HTML execution or general mathematical problem solving. On this test machine, the `gaokao-math-wiki/wiki` repository is registered in Obsidian under the vault name `wiki`; use the name returned by `list_vaults`.
+
+Spacing between mathematical scenes and note excerpts consumes Jevbot's shared
+`--jevbot-space-block` CSS token. The host supplies it to sandboxed MCP Apps; the
+24px fallback is used by standalone offline previews. The spacing definition
+belongs to Jevbot, while the bridge decides which content blocks use it.

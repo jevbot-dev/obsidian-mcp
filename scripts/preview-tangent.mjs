@@ -1,0 +1,13 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { tangentNoteData, tangentNoteHTML } from '../src/tangent-note.mjs';
+const [input, output, width = '960', pixelRatio = '1'] = process.argv.slice(2);
+if (!input || !output) throw Error('Usage: node scripts/preview-tangent.mjs structuredContent.json output.html [width] [pixelRatio]');
+const payload = JSON.parse(readFileSync(input, 'utf8'));
+const data = payload.structuredContent?.math ?? payload.math ?? (payload.scene === 'tangent' ? payload : tangentNoteData(payload));
+if (!data || data.scene !== 'tangent') throw Error('Input is not a supported tangent note or read_note structuredContent');
+const w = Number(width), ratio = Number(pixelRatio);
+if (!Number.isFinite(w) || w < 320 || w > 4096 || !Number.isFinite(ratio) || ratio < 0.5 || ratio > 4) throw Error('Invalid width or pixel ratio');
+const safe = JSON.stringify(data).replaceAll('<', '\\u003c').replaceAll('\u2028', '\\u2028').replaceAll('\u2029', '\\u2029');
+const html = tangentNoteHTML.replace('<script>', '<script>window.PREVIEW_DATA=' + safe + ';\n').replace('</script>', ';window.capture.configure(' + JSON.stringify({width:w,pixelRatio:ratio}) + ');</script>');
+writeFileSync(output, html);
+console.log(output);
