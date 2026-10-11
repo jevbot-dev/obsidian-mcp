@@ -16,6 +16,7 @@ The agent first lists vaults and asks which one to use (unless the user already 
 |---|---|
 | `status` | CLI readiness, setup guidance, bridge edit revision |
 | `list_vaults` | Names, paths and total count |
+| `reveal_vault` | Reveal the revalidated registered folder in Finder; does not select the task workspace |
 | `select_vault` | Validate the user's target; does not open a window |
 | `open_vault`, `open_note` | Send an encoded Obsidian URI with `/usr/bin/open -b md.obsidian`; report unverified delivery |
 | `search_notes`, `read_note` | Structured search and note content |
@@ -31,7 +32,7 @@ npm test
 npm run package
 ```
 
-`release/obsidian-mcp-0.1.0.zip` contains only `obsidian-mcp/server.mjs`. The deterministic packaging script also emits archive SHA-256, per-file hash and catalog download metadata. The tag workflow runs tests, builds with the lockfile, attests provenance and publishes the release. Release packages are built in CI; local artifacts are used only for testing and reproducibility checks.
+`release/obsidian-mcp-0.1.1.zip` contains only `obsidian-mcp/server.mjs`. The deterministic packaging script also emits archive SHA-256, per-file hash and catalog download metadata. The tag workflow runs tests, builds with the lockfile, attests provenance and publishes the release. Release packages are built in CI; local artifacts are used only for testing and reproducibility checks.
 
 The product remains `obsidian` (`md.obsidian`); its macOS target uses `install.kind: bridge` and `connection.kind: mcp`. The catalog owns package hashes, Node launch template, allowed tools, readiness check and task-context policy. There is no second bridge card. The required application's download URL is `https://obsidian.md/download`.
 
@@ -39,11 +40,15 @@ Official interfaces: https://obsidian.md/help/cli and https://obsidian.md/help/u
 
 ## Chat presentation
 
-For clients advertising Jevbot's read-only A2UI v0.9.1 catalogue, `list_vaults`, `search_notes`, `create_note` and `append_note` also return host-rendered views. Vaults show names, paths and a count; search shows returned paths and available snippets; writes show the target, readback verification status and a bounded body preview. Empty results and failed verification have explicit messages. Lists show at most 50 items and previews are truncated only in UI; the ordinary structured/text result is preserved. Unknown search JSON shapes fall back to the ordinary result.
+For clients advertising Jevbot's interactive A2UI v0.9.1 catalogue (`interactive-0.1.0.json`), `list_vaults`, `search_notes`, `create_note` and `append_note` return host-rendered views. Vaults use a compact two-column table: click the name to open Obsidian through a host-validated deep link, or click the path to reveal its folder using the host’s native Finder API. Both actions work without an active model session. The table does not select the task workspace; specify it in the chat. Opening does not change that selection. The host pins folder reveal to the saved vault path and checks that the folder exists.
 
-Templates are served through `resources/read`; tool results carry UI-only data updates with `audience: user`. Layouts contain no HTML, scripts, buttons or actions. Note strings remain literal untrusted text. Clients without the advertised catalogue receive the ordinary result without an A2UI surface. Vault selection and opening notes still happen through chat/tool calls.
+Search shows returned paths and available snippets; writes show the target, readback verification status and a bounded preview. Empty/failed states are explicit. At most 50 rows are shown; structured/text results stay complete. Unknown search shapes fall back to ordinary text. The model is instructed to avoid repeating lists shown in A2UI.
+
+Templates contain host-owned components only, never HTML/scripts or executable URLs. Results declare opaque action IDs mapped to named MCP tools and exact arguments. Jevbot resolves the issuing connection and applies current access/read policy. Clients without the interactive catalogue receive ordinary results. The 0.1.1 feature requires a new compatible Jevbot client; released Jevbot 0.2.3 supports the previous read-only bridge, not these buttons.
 
 ## Release checklist
+
+Before 1.0, use the current `0.1.x` line and increment the patch version for routine releases. Do not advance to `0.2.0` or `1.0.0` without an explicit version decision.
 
 1. Run `npm test` and the Jevbot opt-in bridge integration test against the locally packaged archive.
 2. Set `package.json` version, commit the lockfile and code, then push an immutable `v<version>` tag.
@@ -51,6 +56,12 @@ Templates are served through `resources/read`; tool results carry UI-only data u
 4. Download the release assets and verify provenance: `gh attestation verify obsidian-mcp-<version>.zip -R jevbot-dev/obsidian-mcp`. Confirm its archive and `server.mjs` hashes against the metadata.
 5. Update the existing Obsidian macOS target in the website's signed catalog, never add a second product. Publish the catalog only after a compatible Jevbot client is available. Subsequent bridge versions use catalog updates without a Jevbot release.
 
-In `jevbot-website`, run `node scripts/import-bridge-release.mjs obsidian macos <version>` to verify the tag-scoped CI provenance, archive inventory and checksums before updating the existing target. Then run `yarn catalog:sign`, review the change and deploy with `yarn build:cloudflare && yarn deploy`. Jevbot 0.2.3 supports this bridge and catalog v2; 0.2.2 reads catalog v1. The first v2 catalog promotion must wait for the compatible client release.
+In `jevbot-website`, run `node scripts/import-bridge-release.mjs obsidian macos <version>` to verify the tag-scoped CI provenance, archive inventory and checksums before updating the existing target. Then run `yarn catalog:sign`, review the change and deploy with `yarn build:cloudflare && yarn deploy`. Jevbot 0.2.3 supports catalog v2 and obsidian-mcp 0.1.0. The 0.1.1 interactive bridge promotion must wait for a client release advertising the new interactive catalogue.
 
 This package contains a JavaScript module, not a macOS executable or app bundle; its pipeline uses provenance and catalog-pinned hashes. Apple signing/notarization applies to **Jevbot.app and its bundled Node** and remains in `jevbot-mac-dev`'s build/finalize workflows. The bridge does not embed signing certificates or notarization credentials, and does not claim an Apple notarization ticket.
+
+### Local mathematical Web preview
+
+`show_trigonometry` provides an offline MCP App with a unit circle, sine/cosine curves, playback, angle, amplitude, frequency and phase controls. Jevbot embeds the packaged HTML in its existing sandbox; no Obsidian plugin, network request or note modification is needed. This is a self-contained demonstration, not a renderer for arbitrary vault HTML or note formulas. It does not claim to read or explain a specific note. The bridge must be registered with `show_trigonometry: read`.
+
+`read_note` also automatically presents a source-linked integral-area Web view when the actual note contains the supported integral example (the integral of x over [0,1], plus y=x²). Its left-endpoint rectangles converge to 1/2 and 1/3, with playback, function selection and a subdivision slider. Other notes retain their ordinary text results. The bounded excerpt renders Markdown and inline/display LaTeX using Markdown-it (raw HTML disabled) and KaTeX MathML (trust disabled, finite expansion/size limits). Links/images remain inert; no vault scripts execute. The source button asks Jevbot to open a saved Obsidian deep link matching the returned vault and note path, without an MCP call or model turn. Successful opens show no status message; failures remain visible. This requires the matching Jevbot host update (planned 0.2.4).

@@ -70,8 +70,12 @@ export async function nativeOpen(url) {
   await exec('/usr/bin/open', ['-b', APP_ID, url], { timeout: 15000, maxBuffer: 64 * 1024 });
 }
 
+async function nativeReveal(path) {
+  await exec('/usr/bin/open', ['-R', path], { timeout: 15000, maxBuffer: 64 * 1024 });
+}
+
 /** Every note operation explicitly targets a vault; no mutable shared selection. */
-export function createBridge({ run = nativeRun, open = nativeOpen } = {}) {
+export function createBridge({ run = nativeRun, open = nativeOpen, reveal = nativeReveal } = {}) {
   let revision = 0;
   async function vaults() { return parseVaults(await run(['vaults', 'verbose'])); }
   async function target(name) {
@@ -97,6 +101,10 @@ export function createBridge({ run = nativeRun, open = nativeOpen } = {}) {
     },
     async list_vaults() { const results = await vaults(); return { total: results.length, vaults: results }; },
     async select_vault({ vault }) { const selected = await target(vault); return { vault: selected.name, path: selected.path, selected: true }; },
+    async reveal_vault({ vault }) {
+      const selected = await target(vault); await reveal(selected.path);
+      return { vault, path: selected.path, sent: true, verified: false };
+    },
     async open_vault({ vault }) {
       await target(vault); const url = uri(vault); await open(url);
       return { vault, sent: true, verified: false, url, message: 'An open request was sent to Obsidian; displayed vault is not verified.' };

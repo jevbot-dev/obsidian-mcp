@@ -58,3 +58,12 @@ test('CLI failures surface setup guidance and mismatched target paths block writ
   await assert.rejects(wrong.create_note({ vault: 'A', path: 'x.md', content: 'x' }), /different vault/);
   assert.equal(calls.length, 2);
 });
+
+test('reveal revalidates the vault and passes its registered path to Finder', async () => {
+  const paths=[];
+  const bridge=createBridge({run:async args=>args[0]==='vaults' ? 'A\t/vault/A' : '/vault/A',reveal:async path=>paths.push(path)});
+  assert.equal((await bridge.reveal_vault({vault:'A'})).sent,true);
+  assert.deepEqual(paths,['/vault/A']);
+  await assert.rejects(bridge.reveal_vault({vault:'missing'}),/no longer/);
+  assert.equal(paths.length,1);
+});

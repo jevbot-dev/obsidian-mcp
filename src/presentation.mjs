@@ -1,5 +1,5 @@
-// Read-only Jevbot A2UI: presentation data never becomes an executable action.
-export const catalogId = 'https://jevbot.dev/a2ui/catalogs/read-only-0.1.0.json';
+// Declarative A2UI: the host resolves explicit user clicks through this MCP connection.
+export const catalogId = 'https://jevbot.dev/a2ui/catalogs/interactive-0.1.0.json';
 const mimeType = 'application/a2ui+json';
 const version = 'v0.9.1';
 export const views = {
@@ -15,7 +15,13 @@ export function layout(view) {
     { id: 'body', component: 'Column', children: ['title', 'context', ...(view === 'write' ? ['result', 'preview'] : ['items']), 'footer'] },
     text('title', '/title', 'h2'), text('context', '/context', 'caption'), text('footer', '/footer', 'caption'),
   ];
-  if (view === 'write') components.push(text('result', '/result'), text('preview', '/preview'));
+  if (view === 'vaults') components.push(
+    { id: 'items', component: 'Table', columns: ['Vault', '路径'], children: { path: '/items', componentId: 'item' } },
+    { id: 'item', component: 'Row', children: ['name', 'path'] },
+    { id: 'name', component: 'Button', text: { path: 'name' }, action: { path: 'openAction' }, variant: 'link' },
+    { id: 'path', component: 'Button', text: { path: 'path' }, action: { path: 'revealAction' }, variant: 'link' },
+  );
+  else if (view === 'write') components.push(text('result', '/result'), text('preview', '/preview'));
   else components.push(
     { id: 'items', component: 'List', children: { path: '/items', componentId: 'item' } },
     { id: 'item', component: 'Column', children: ['name', 'path', 'snippet'] },
@@ -37,8 +43,8 @@ export function presentationData(tool, value) {
   if (tool === 'list_vaults') {
     const rows = value.vaults;
     return { title: 'Obsidian 笔记仓库', context: `共 ${value.total} 个 vault`,
-      items: rows.slice(0, 50).map(row => ({ name: clipped(row.name, 1024), path: clipped(row.path, 4096), snippet: '' })),
-      footer: rows.length > 50 ? `仅展示前 50 个；另有 ${rows.length - 50} 个。请在聊天中指定 vault。` : rows.length ? '请在聊天中指定要使用的 vault。' : '尚未发现已登记的 vault。' };
+      items: rows.slice(0, 50).map((row, index) => ({ name: clipped(row.name, 1024), path: clipped(row.path, 4096), openAction: `open-${index}`, revealAction: `reveal-${index}` })),
+      footer: rows.length > 50 ? `仅展示前 50 个；另有 ${rows.length - 50} 个。点击名称在 Obsidian 打开；点击路径在 Finder 显示。` : rows.length ? '点击名称在 Obsidian 打开仓库，点击路径显示目录。' : '尚未发现已登记的 vault。' };
   }
   if (tool === 'search_notes') {
     const rows = searchItems(value.results);
@@ -66,7 +72,11 @@ export function toolResult(tool, value, enabled) {
   const data = presentationData(tool, value);
   if (!data) return result;
   const view = views[tool], uri = `a2ui://obsidian/${view}`;
-  result._meta = { ui: { resourceUri: uri, mimeType } };
+  const links = tool === 'list_vaults' ? value.vaults.slice(0, 50).flatMap((row, index) => [
+    { id: `open-${index}`, url: 'obsidian://open?vault=' + encodeURIComponent(row.name) },
+    { id: `reveal-${index}`, kind: 'reveal', path: row.path },
+  ]) : [];
+  result._meta = { ui: { resourceUri: uri, mimeType, actions: [], links } };
   result.content.push({ type: 'resource', annotations: { audience: ['user'] }, resource: {
     uri, mimeType, text: JSON.stringify([message('updateDataModel', { surfaceId: `obsidian-${view}`, path: '/', value: data })]),
   } });

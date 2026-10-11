@@ -41,12 +41,26 @@ test('write result never disguises failed verification, and truncates only the U
   assert.equal(toolResult('open_vault', { sent: true, verified: false }, true)._meta, undefined);
 });
 
-test('all templates use fixed host components and matching surfaces without actions', () => {
+test('all templates use fixed host components and matching surfaces with declarative actions', () => {
   for (const view of ['vaults', 'search', 'write']) {
     const messages = layout(view);
     assert.equal(messages[0].createSurface.catalogId, catalogId);
     assert.equal(messages[0].createSurface.surfaceId, messages[1].updateComponents.surfaceId);
-    assert.ok(messages[1].updateComponents.components.every(c => ['Text', 'Card', 'Column', 'List'].includes(c.component)));
+    assert.ok(messages[1].updateComponents.components.every(c => ['Text', 'Card', 'Column', 'List', 'Table', 'Row', 'Button'].includes(c.component)));
     assert.ok(messages[1].updateComponents.components.some(c => c.id === 'root'));
   }
+});
+
+test('vault actions use exact names, never paths or executable URLs, and are bounded', () => {
+  const name = 'a & ? " vault';
+  const value = {total:60,vaults:Array.from({length:60},(_,i)=>({name:i ? `Vault ${i}` : name,path:'/vault/'+i}))};
+  const result = toolResult('list_vaults',value,true);
+  assert.equal(result._meta.ui.actions.length,0);
+  const table = layout('vaults')[1].updateComponents.components.find(c=>c.component==='Table');
+  assert.deepEqual(table.columns,['Vault','路径']);
+  assert.ok(!layout('vaults')[1].updateComponents.components.some(c=>c.id==='select'));
+  assert.equal(result._meta.ui.links.length,100);
+  assert.equal(result._meta.ui.links[0].url,'obsidian://open?vault='+encodeURIComponent(name));
+  assert.deepEqual(result._meta.ui.links[1],{id:'reveal-0',kind:'reveal',path:'/vault/0'});
+  assert.ok(layout('vaults')[1].updateComponents.components.some(c=>c.component==='Table'));
 });

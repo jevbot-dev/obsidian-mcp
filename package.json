@@ -1,6 +1,6 @@
 {
   "name": "obsidian-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "MIT",
   "description": "Obsidian app bridge: explicit vault selection, note queries and verified edits through the official CLI.",
@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.1",
+    "katex": "0.19.0",
+    "markdown-it": "15.0.2",
     "zod": "4.6.3"
   },
   "devDependencies": {
